@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartStudy AI — Personalised Study Planner</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">🎓</div>
+      <div>
+        <div class="brand-title">SmartStudy AI</div>
+        <div class="brand-subtitle">Personalised Study Planner</div>
+      </div>
+    </div>
+
+    <ul class="nav-links">
+      <li class="nav-item active" onclick="switchView('onboarding')">
+        <span>📝</span> <span>Setup & Topics</span>
+      </li>
+      <li class="nav-item" onclick="switchView('roadmap')">
+        <span>🗺️</span> <span>AI Learning Roadmap</span>
+      </li>
+      <li class="nav-item" onclick="switchView('checklist')">
+        <span>📋</span> <span>Daily Task Checklist</span>
+      </li>
+      <li class="nav-item" onclick="switchView('calendar')">
+        <span>📅</span> <span>Weekly Timetable</span>
+      </li>
+      <li class="nav-item" onclick="switchView('dashboard')">
+        <span>📊</span> <span>Progress Dashboard</span>
+      </li>
+      <li class="nav-item" onclick="switchView('quiz-center')">
+        <span>💡</span> <span>Quiz & Practice</span>
+      </li>
+      <li class="nav-item" onclick="switchView('settings')">
+        <span>🔄</span> <span>Reschedule & Settings</span>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div style="font-weight: 600; color: #cbd5e1;" id="active-student-label">No student loaded</div>
+      <div style="font-size: 0.72rem; margin-top: 4px;" id="active-exam-label">Please set up or load profile</div>
+    </div>
+  </aside>
+
+  <!-- Main Workspace Wrapper -->
+  <main class="main-wrapper">
+    
+    <!-- Top Header Bar with Quick Demonstration Profile Buttons -->
+    <header class="top-bar">
+      <div>
+        <h1 class="page-title" id="page-title-text">Personalised Study Planner</h1>
+        <p class="page-desc" id="page-desc-text">AI-driven scheduling with guaranteed availability limits & accountability</p>
+      </div>
+
+      <div class="quick-profiles">
+        <span style="font-size: 0.8rem; font-weight: 600; color: #475569;">Sample Profiles:</span>
+        <button class="profile-btn" onclick="loadSampleProfile('profile_1_beginner')">🚀 Alex (Beginner • 2h/d)</button>
+        <button class="profile-btn" onclick="loadSampleProfile('profile_2_intermediate')">⚡ Maya (Intermediate • 3h/d)</button>
+        <button class="profile-btn" onclick="loadSampleProfile('profile_3_os')">💻 Sam (OS Student • 1.5h/d)</button>
+      </div>
+    </header>
+
+    <!-- Global Capacity Warning Banner (Dynamically injected) -->
+    <div id="capacity-warning-banner" style="display: none;"></div>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 1: Onboarding & User Defined Topics Entry -->
+    <!-- ============================================================ -->
+    <section id="view-onboarding" class="view-section active">
+      <div class="grid-2">
+        <!-- Form Left: Student & Assessment Details -->
+        <div class="card">
+          <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 16px;">1. Assessment & Study Availability</h2>
+          
+          <div class="form-group">
+            <label class="form-label">Student Name</label>
+            <input type="text" id="input-student-name" class="form-input" placeholder="e.g. Jordan Lee" value="Jordan Lee">
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Assessment / Exam Name</label>
+              <input type="text" id="input-exam-name" class="form-input" placeholder="e.g. CS201 Midterm Exam" value="CS201 Programming Midterm">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Subject Name</label>
+              <input type="text" id="input-subject-name" class="form-input" placeholder="e.g. Algorithms & Data Structures" value="Algorithms & Data Structures">
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Daily Available Study Hours</label>
+              <input type="number" id="input-daily-hours" class="form-input" min="0.5" max="12.0" step="0.5" value="2.5">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Assessment / Exam Date</label>
+              <input type="date" id="input-exam-date" class="form-input">
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Preferred Study Window (Start - End)</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="time" id="input-start-time" class="form-input" value="18:00">
+                <input type="time" id="input-end-time" class="form-input" value="21:30">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Preferred Session Duration</label>
+              <select id="input-duration" class="form-select">
+                <option value="30">30 minutes</option>
+                <option value="45" selected>45 minutes (Recommended)</option>
+                <option value="60">60 minutes</option>
+                <option value="90">90 minutes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Available Study Days</label>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px;" id="study-days-checkboxes">
+              <label><input type="checkbox" name="days" value="Monday" checked> Mon</label>
+              <label><input type="checkbox" name="days" value="Tuesday" checked> Tue</label>
+              <label><input type="checkbox" name="days" value="Wednesday" checked> Wed</label>
+              <label><input type="checkbox" name="days" value="Thursday" checked> Thu</label>
+              <label><input type="checkbox" name="days" value="Friday" checked> Fri</label>
+              <label><input type="checkbox" name="days" value="Saturday" checked> Sat</label>
+              <label><input type="checkbox" name="days" value="Sunday" checked> Sun</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Right: Custom Topics Entry -->
+        <div class="card">
+          <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 16px;">2. Custom Topics to Study</h2>
+          <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 14px;">
+            Enter any subject or topic manually. You can add multiple topics, customize mastery, and edit or remove them.
+          </p>
+
+          <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+            <div class="form-group">
+              <label class="form-label">Topic Name</label>
+              <input type="text" id="custom-topic-input" class="form-input" placeholder="e.g. Binary Search, Operating Systems, Recursion, etc.">
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label">Current Mastery Level</label>
+                <select id="custom-mastery-input" class="form-select">
+                  <option value="Beginner" selected>Beginner (Little or no knowledge)</option>
+                  <option value="Intermediate">Intermediate (Understands basics)</option>
+                  <option value="Advanced">Advanced (Needs revision only)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Topic Importance / Weight</label>
+                <select id="custom-importance-input" class="form-select">
+                  <option value="High" selected>High (Major assessment weight)</option>
+                  <option value="Medium">Medium (Standard weight)</option>
+                  <option value="Low">Low (Minor weight)</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addCustomTopic()">+ Add Topic to List</button>
+          </div>
+
+          <div style="margin-bottom: 18px;">
+            <label class="form-label">Entered Topics (<span id="topics-count-badge">0</span>)</label>
+            <div id="topics-list-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto;">
+              <!-- Dynamic topic chips inserted here -->
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="width: 100%; padding: 14px;" onclick="submitOnboardingPlan()">
+            ✨ Generate AI Roadmap & Personalised Schedule
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 2: AI-Generated Learning Roadmap -->
+    <!-- ============================================================ -->
+    <section id="view-roadmap" class="view-section">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+          <div>
+            <h2 style="font-size: 1.3rem; font-weight: 700;">AI Learning Roadmap & Concept Breakdown</h2>
+            <p style="font-size: 0.88rem; color: #64748b;">
+              Each topic is analyzed, ranked by priority, and broken into subtopics, learning activities, exercises, and quizzes.
+            </p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="switchView('onboarding')">+ Add Another Topic</button>
+        </div>
+
+        <div id="roadmap-cards-container">
+          <!-- Dynamic topic roadmap cards -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 3: Daily Task Checklist & Interactive Task Runner -->
+    <!-- ============================================================ -->
+    <section id="view-checklist" class="view-section">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div>
+            <h2 style="font-size: 1.3rem; font-weight: 700;">Daily Study Checklist & Task Accountability</h2>
+            <p style="font-size: 0.88rem; color: #64748b;" id="checklist-date-header">Tasks scheduled for today</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="filterChecklist('all')">All Tasks</button>
+            <button class="btn btn-secondary btn-sm" onclick="filterChecklist('pending')">Pending</button>
+            <button class="btn btn-secondary btn-sm" onclick="filterChecklist('completed')">Completed</button>
+          </div>
+        </div>
+
+        <div id="checklist-tasks-container">
+          <!-- Daily tasks will render here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 4: Weekly Timetable & Calendar View -->
+    <!-- ============================================================ -->
+    <section id="view-calendar" class="view-section">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+          <div>
+            <h2 style="font-size: 1.3rem; font-weight: 700;">Weekly Study Schedule</h2>
+            <p style="font-size: 0.88rem; color: #64748b;">
+              Strictly constraint-checked: non-overlapping sessions respecting your preferred hours and available days.
+            </p>
+          </div>
+          <div id="calendar-compliance-badge" class="badge badge-success" style="font-size: 0.82rem; padding: 6px 12px;">
+            ✅ Availability Audit: PASS (Zero Over-allocation)
+          </div>
+        </div>
+
+        <div id="calendar-days-container">
+          <!-- Daily scheduled cards with sessions -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 5: Progress Dashboard -->
+    <!-- ============================================================ -->
+    <section id="view-dashboard" class="view-section">
+      <!-- KPI Metric Row -->
+      <div class="grid-4" style="margin-bottom: 24px;">
+        <div class="metric-card">
+          <div class="metric-title">Overall Progress</div>
+          <div class="metric-val" id="kpi-progress">0%</div>
+          <div class="metric-sub" id="kpi-progress-sub">0 of 0 tasks completed</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Exam Readiness Indicator</div>
+          <div class="metric-val" id="kpi-readiness">50%</div>
+          <div class="metric-sub">Synthesizing tasks, quizzes & mastery</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Remaining Study Time</div>
+          <div class="metric-val" id="kpi-remaining-hours">0 hrs</div>
+          <div class="metric-sub" id="kpi-days-remaining">0 days to deadline</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Tasks Needing Revision</div>
+          <div class="metric-val" id="kpi-revision-count" style="color: #ea580c;">0</div>
+          <div class="metric-sub">Triggered by quiz scores < 70%</div>
+        </div>
+      </div>
+
+      <div class="alert alert-info" style="margin-bottom: 24px;">
+        ℹ️ <strong>Readiness Disclaimer:</strong> <span id="readiness-disclaimer-text">The readiness score is an estimate synthesizing task completion, quiz accuracy, and self-assessed mastery. It is not an absolute guarantee of exam performance.</span>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 14px;">Daily Study Hours vs. Availability Limit</h3>
+          <div style="height: 280px;">
+            <canvas id="chart-daily-hours"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 14px;">Task Completion Status</h3>
+          <div style="height: 280px; display: flex; justify-content: center;">
+            <canvas id="chart-task-status"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 6: Quiz & Practice Center -->
+    <!-- ============================================================ -->
+    <section id="view-quiz-center" class="view-section">
+      <div class="card">
+        <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Self-Assessment Quizzes & Coding Drills</h2>
+        <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 20px;">
+          Active retrieval practice is the key to deep retention. Review past quiz scores or launch a practice drill.
+        </p>
+
+        <div id="quiz-list-container">
+          <!-- Quiz list rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 7: Reschedule & Dynamic Plan Regeneration -->
+    <!-- ============================================================ -->
+    <section id="view-settings" class="view-section">
+      <div class="card">
+        <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Dynamic Rescheduling & Plan Regeneration</h2>
+        <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 20px;">
+          If you missed sessions or scored poorly on quizzes, click below. The AI will preserve all your completed tasks and intelligently repack unfinished work into remaining days without exceeding your daily availability.
+        </p>
+
+        <button class="btn btn-primary" onclick="triggerRegeneratePlan()">
+          🔄 Regenerate My Plan (Preserve Completed Tasks)
+        </button>
+
+        <div id="regeneration-explanation-box" style="margin-top: 20px; display: none;">
+          <div class="alert alert-success">
+            <strong>AI Adaptation Report:</strong>
+            <div id="regeneration-explanation-text" style="margin-top: 6px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: Interactive Task Runner (Timer, Material, Quiz, Code) -->
+  <!-- ============================================================ -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <span class="badge badge-study" id="modal-task-badge">Concept Study</span>
+          <h2 style="font-size: 1.25rem; font-weight: 700; margin-top: 6px;" id="modal-task-title">Task Title</h2>
+          <div style="font-size: 0.82rem; color: #64748b;" id="modal-task-sub">Subtopic</div>
+        </div>
+        <button onclick="closeTaskModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Interactive Study Timer -->
+        <div class="timer-container">
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: #94a3b8;">Active Session Timer</div>
+            <div class="timer-digits" id="timer-display">45:00</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-left: auto;">
+            <button class="btn btn-sm btn-primary" id="btn-timer-toggle" onclick="toggleTimer()">▶ Start</button>
+            <button class="btn btn-sm btn-secondary" onclick="resetTimer()">↺ Reset</button>
+          </div>
+        </div>
+
+        <!-- Learning Objective & Material -->
+        <div style="margin-bottom: 20px;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 6px;">🎯 Learning Objective</h4>
+          <p style="font-size: 0.9rem; color: #475569;" id="modal-learning-obj">Objective content</p>
+        </div>
+
+        <div style="margin-bottom: 20px; background: #f8fafc; border: 1px solid var(--border); padding: 14px; border-radius: 8px;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 6px;">📖 Study Material & Concept Walkthrough</h4>
+          <div style="font-size: 0.88rem; color: #334155; line-height: 1.5;" id="modal-study-material">Material content</div>
+        </div>
+
+        <!-- Practical Exercise / Code Submission (if applicable) -->
+        <div id="modal-code-section" style="display: none; margin-bottom: 20px;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 6px;">💻 Practical Exercise & Code Runner</h4>
+          <p style="font-size: 0.88rem; color: #475569;" id="modal-code-prompt">Exercise prompt</p>
+          <textarea id="modal-code-textarea" class="form-textarea" rows="6" style="font-family: monospace; font-size: 0.85rem; margin: 8px 0; background: #0f172a; color: #38bdf8;"></textarea>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <button class="btn btn-sm btn-secondary" onclick="submitCodeSolution()">⚡ Run Test Cases</button>
+            <span id="code-result-badge" style="font-size: 0.82rem;"></span>
+          </div>
+          <div id="code-eval-output" style="font-size: 0.82rem; margin-top: 8px; color: #475569;"></div>
+        </div>
+
+        <!-- Interactive Self-Assessment Quiz (if applicable) -->
+        <div id="modal-quiz-section" style="display: none; margin-bottom: 20px;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 6px;">💡 Self-Assessment Quiz</h4>
+          <div id="modal-quiz-questions-container">
+            <!-- Dynamic quiz questions injected here -->
+          </div>
+          <button class="btn btn-sm btn-primary" style="margin-top: 10px;" onclick="submitQuizAttempt()">Submit Quiz Answers</button>
+          <div id="quiz-result-box" style="margin-top: 10px; display: none;"></div>
+        </div>
+
+        <!-- Reflection / Notes Field -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label">Record Difficulties or Key Notes</label>
+          <textarea id="modal-student-notes" class="form-textarea" rows="2" placeholder="Note down any concepts you struggled with or key takeaways..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeTaskModal()">Close</button>
+        <button class="btn btn-success" id="btn-complete-task" onclick="markTaskCompleted()">✓ Mark as Completed</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
